@@ -420,6 +420,7 @@ def run_game():
     screen = pg.display.set_mode((600, 800))
 
     while True:
+        screen.fill((0, 0, 0))
 
         options = startup_menu(screen)
 
