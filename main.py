@@ -4,7 +4,8 @@ import sys
 
 class TTTBoard:
 
-    def __init__(self, p1, p2):
+    def __init__(self, mode, p1, p2):
+        self.mode = mode
         self.board = [['e', 'e', 'e'], ['e', 'e', 'e'], ['e', 'e', 'e']]
         self.player1 = p1
         self.player2 = p2
@@ -24,9 +25,50 @@ class TTTBoard:
         return True
 
     def display_win(self, display):
+
         display.fill((0, 0, 0, 100))
-        pg.draw.rect(display, (100, 100, 100), (10, 200, 580, 580), 5)
-        
+
+        pg.draw.rect(display, (255, 215, 0, 150), (10, 100, 580, 680))
+
+        if self.curr_player == 0:
+            font = pg.font.SysFont(None, 90)
+            img = font.render(f'{self.player1} Wins!', True, (0, 0, 0))
+            width = img.get_width() // 2
+            display.blit(img, (300 - width, 135))
+        else:
+            font = pg.font.SysFont(None, 90)
+            img = font.render(f'{self.player2} Wins!', True, (0, 0, 0))
+            width = img.get_width() // 2
+            display.blit(img, (300 - width, 135))
+
+        pg.draw.rect(display, (255, 245, 150), (10, 300, 580, 100))
+        font = pg.font.SysFont(None, 50)
+        img = font.render('Play Again', True, (0, 0, 0))
+        width = img.get_width() // 2
+        display.blit(img, (300 - width, 335))
+
+        pg.draw.rect(display, (255, 245, 150), (10, 450, 580, 100))
+        font = pg.font.SysFont(None, 50)
+        img = font.render('Main Menu', True, (0, 0, 0))
+        width = img.get_width() // 2
+        display.blit(img, (300 - width, 485))
+
+        pg.display.update()
+
+        loop = True
+        while loop:
+            for event in pg.event.get():
+                if event.type == pg.QUIT:
+                    loop = False
+                    pg.quit()
+                    sys.exit()
+                elif event.type == pg.MOUSEBUTTONDOWN:
+                    pos = pg.mouse.get_pos()
+                    if 300 < pos[1] < 400:
+                        return True
+                    if 450 < pos[1] < 550:
+                        return False
+
     def cross_check(self, indexx, indexy, char):
         if indexx == 1 and indexy == 1:
             return (self.board[indexx - 1][indexy - 1] == char and self.board[indexx + 1][indexy + 1] == char) or (self.board[indexx - 1][indexy + 1] == char and self.board[indexx - 1][indexy + 1] == char)
@@ -89,6 +131,9 @@ class TTTBoard:
             display.blit(img, (300 - width, 100))
             pg.display.update()
 
+            if self.mode == 1:
+                return self.AI_move(display)
+
             return False
 
         else:
@@ -121,6 +166,60 @@ class TTTBoard:
             display.blit(img, (300 - width, 100))
             pg.display.update()
             return False
+
+    def AI_move(self, display):
+        bestX = -1
+        bestY = -1
+        #Greedy Algorithm Checking For Winning Solution In Next Move
+        for x in range(3):
+            for y in range(3):
+                if self.board[x][y] == 'e':
+                    self.board[x][y] = "X"
+                    if self.line_check(x, y, 'X'):
+                        bestX = x
+                        bestY = y
+                    self.board[x][y] = 'e'
+
+        if bestX != -1:
+            return self.place(bestX, bestY, display)
+
+        #Greedy Algorithm Checking For Solution That Blocks The Other Players Win
+        for x in range(3):
+            for y in range(3):
+                if self.board[x][y] == 'e':
+                    self.board[x][y] = "O"
+                    if self.line_check(x, y, 'O'):
+                        bestX = x
+                        bestY = y
+                    self.board[x][y] = 'e'
+
+        if bestX != -1:
+            return self.place(bestX, bestY, display)
+
+
+        #Greedy Algorithm Checking For Row + Column Combination with The Most Other Xs and least Os
+        column_worth = [0, 0, 0]
+        row_worth = [0, 0, 0]
+        for x in range(3):
+            for y in range(3):
+                if self.board[x][y] == 'X':
+                    column_worth[x] += 1
+                    row_worth[y] += 1
+                elif self.board[x][y] == 'O':
+                    column_worth[x] -= 1
+                    row_worth[y] -= 1
+
+        bestVal = -3
+        for x in range(3):
+            for y in range(3):
+                if self.board[x][y] == 'e':
+                    if column_worth[x] + row_worth[y] > bestVal:
+                        bestVal = column_worth[x] + row_worth[y]
+                        bestX = x
+                        bestY = y
+
+        if bestX != -1:
+            return self.place(bestX, bestY, display)
 
 
 def setup(screen, board):
@@ -311,7 +410,7 @@ def one_round(screen, board):
                     loop = False
                     break
 
-    board.display_win()
+    return board.display_win(screen)
 
 
 def run_game():
@@ -326,7 +425,8 @@ def run_game():
 
         cont = True
         while cont:
-            board = TTTBoard(options[1], options[2])
+            screen.fill((0, 0, 0))
+            board = TTTBoard(options[0], options[1], options[2])
 
             setup(screen, board)
 
