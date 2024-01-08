@@ -81,6 +81,7 @@ class TTTBoard:
                     is_cross = False
             if is_cross:
                 return True
+            is_cross = True
             for x in range(3):
                 if self.board[x][2 - x] != char:
                     is_cross = False
